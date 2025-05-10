@@ -2,9 +2,9 @@
 
 This project demonstrates the implementation of AWS Cognito with Lambda triggers for user authentication workflows. It uses AWS SAM (Serverless Application Model) to deploy a complete authentication system with customizable pre-signup and post-confirmation Lambda functions.
 
-## Architecture
+<!-- ## Architecture
 
-![Architecture Diagram](https://d1.awsstatic.com/product-marketing/Lambda/Diagrams/product-page-diagram_Lambda-RealTimeFileProcessing.a59577de4b6471674a540b878b0b684e0249a18c.png)
+![Architecture Diagram](https://d1.awsstatic.com/product-marketing/Lambda/Diagrams/product-page-diagram_Lambda-RealTimeFileProcessing.a59577de4b6471674a540b878b0b684e0249a18c.png) -->
 
 The project consists of:
 
