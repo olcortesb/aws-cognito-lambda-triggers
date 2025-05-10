@@ -1,0 +1,15 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "cognito-lambda-triggers"
+resolve_s3 = true
+s3_prefix = "cognito-lambda-triggers"
+region = "eu-central-1"
+profile = "olcortesb"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = [
+"Client="https://myapp.com",
+"TestWithPostman=true",
+"CognitoARN=arn:aws:cognito-idp:eu-central-1:XXXXXXX:userpool/XXXXX\"
+]
+image_repositories = []

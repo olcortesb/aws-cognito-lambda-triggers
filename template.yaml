@@ -1,0 +1,114 @@
+## Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+## SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Cognito to API Gateway HTTP API (JWT)
+    
+Parameters:
+  Client:
+    Description: Client website for authentication redirects and cors (must start with https://)
+    Type: String
+    Default: https://myapp.com
+  TestWithPostman:
+    Description: Do you need to test with Postman? (Not recommended for production)
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  CognitoARN:
+    Description: ARN of Cognito User Pool
+    Type: String
+    Default: arn
+
+Resources:
+  # Creates a nested stack with the required Cognito requirements
+  CognitoStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./cognito.yaml
+      Parameters:
+        ClientDomain: !Ref Client
+        Postman: !Ref TestWithPostman
+
+  # Creates an API Gateway HTTP API endpoint with JWT authorization
+  AppApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Description: Cognito to HTTP API demo
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+        AllowOrigins:
+          - !Ref Client
+      Auth:
+        Authorizers:
+          OAuth2Authorizer:
+            AuthorizationScopes:
+              - email
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !GetAtt CognitoStack.Outputs.Issuer
+              audience:
+                - !GetAtt CognitoStack.Outputs.UserPoolClientId
+        DefaultAuthorizer: OAuth2Authorizer
+                
+  AppFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: app/
+      Handler: app.handler
+      Runtime: nodejs22.x
+      Events:
+        AppApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AppApi
+            Path: /
+            Method: get
+  
+  # 1 Add the trigger function
+  PreSignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: presignup/
+      Handler: preSignUp.handler
+      Runtime: nodejs22.x
+
+  # 1 Add the trigger function
+  PostConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: postconfirmation/
+      Handler: postConfirmation.handler
+      Runtime: nodejs22.x
+   
+  # 2. Add permission cognito invoke
+
+  LambdaSingUpInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreSignUpFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Ref CognitoARN
+
+  LambdaPostConfirmationInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostConfirmationFunction
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !Ref CognitoARN
+
+Outputs:
+  AppApiEndpoint:
+    Description: API Endpoint
+    Value: !Sub "https://${AppApi}.execute-api.${AWS::Region}.amazonaws.com"
+  AuthUrl:
+    Description: Url used to authenticate
+    Value: !GetAtt CognitoStack.Outputs.AuthUrl
+  ClientId:
+    Description: Application client ID
+    Value: !GetAtt CognitoStack.Outputs.UserPoolClientId
